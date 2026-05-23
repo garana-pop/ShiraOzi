@@ -61,8 +61,15 @@ namespace ShiraOzi.UI
 
         private void OnItemClicked(ItemData item)
         {
-            gameState.SetActiveItem(item);
+            if (gameState.activeItem == item)
+            {
+                gameState.SetActiveItem(null);
+            }
+            else
+            {
+                gameState.SetActiveItem(item);
+            }
             Close();
         }
-    }
+}
 }

@@ -82,14 +82,17 @@ namespace ShiraOzi.UI
         {
             if (gameState == null) return;
 
-            bool hasItem = gameState.activeItem != null;
-            if (itemPanel) itemPanel.SetActive(hasItem);
+            var item = gameState.activeItem;
+            bool hasItem = item != null;
 
-            if (hasItem)
+            // アイテムがある場合のみパネルを表示する（アイテムがない場合は非表示にしない）
+            if (itemPanel && hasItem && !itemPanel.activeSelf)
             {
-                if (activeItemImage) activeItemImage.sprite = gameState.activeItem.icon;
-                if (itemText) itemText.text = gameState.activeItem.itemName;
+                itemPanel.SetActive(true);
             }
+
+            if (activeItemImage) activeItemImage.sprite = hasItem ? item.icon : null;
+            if (itemText) itemText.text = hasItem ? (item.itemName ?? string.Empty) : string.Empty;
         }
 
         public void OnItemPanelClicked()
