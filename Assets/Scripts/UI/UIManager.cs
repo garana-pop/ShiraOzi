@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using ShiraOzi.Core;
@@ -169,6 +169,12 @@ namespace ShiraOzi.UI
         /// </summary>
         public void OnItemPanelClicked()
         {
+            // 会話中の場合は会話を終了する
+            if (DialogueManager.Instance && DialogueManager.Instance.IsDisplaying)
+            {
+                DialogueManager.Instance.EndDialogue();
+            }
+
             if (inventoryUI) inventoryUI.Toggle();
         }
 

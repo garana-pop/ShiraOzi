@@ -15,13 +15,14 @@ namespace ShiraOzi.Core
 
         [SerializeField] private GameState gameState; // ゲーム状態データへの参照
         
+        public bool IsDisplaying => isDisplaying;
         private bool isDisplaying; // 現在会話を表示中かどうかのフラグ
         private DialogueEntry currentEntry; // 現在再生中のダイアログエントリ
         private int currentLineIndex; // 現在表示中の行のインデックス
         private DialogueLayoutSettings tempLayout; // 一時的に適用されるレイアウト設定
 
         private void Awake()
-        {
+{
             // シングルトンの初期化
             if (Instance == null)
             {
@@ -127,9 +128,9 @@ namespace ShiraOzi.Core
         /// <summary>
         /// 会話を終了し、UIを閉じる。
         /// </summary>
-        private void EndDialogue()
+        public void EndDialogue()
         {
-            isDisplaying = false;
+isDisplaying = false;
             if (UIManager.Instance)
             {
                 UIManager.Instance.HideDialogue();
