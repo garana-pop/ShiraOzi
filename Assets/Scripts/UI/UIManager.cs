@@ -27,12 +27,32 @@ namespace ShiraOzi.UI
         [Header("Settings UI")]
         public GameObject settingsPanel;
 
+        private RectTransform dialogueRectTransform;
+        private Vector2 defaultAnchorMin;
+        private Vector2 defaultAnchorMax;
+        private Vector2 defaultPivot;
+        private Vector2 defaultAnchoredPosition;
+        private Vector2 defaultSizeDelta;
+
         private void Awake()
         {
             if (Instance == null)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                
+                if (dialoguePanel)
+                {
+                    dialogueRectTransform = dialoguePanel.GetComponent<RectTransform>();
+                    if (dialogueRectTransform)
+                    {
+                        defaultAnchorMin = dialogueRectTransform.anchorMin;
+                        defaultAnchorMax = dialogueRectTransform.anchorMax;
+                        defaultPivot = dialogueRectTransform.pivot;
+                        defaultAnchoredPosition = dialogueRectTransform.anchoredPosition;
+                        defaultSizeDelta = dialogueRectTransform.sizeDelta;
+                    }
+                }
             }
             else
             {
@@ -41,7 +61,7 @@ namespace ShiraOzi.UI
         }
 
         private void Start()
-        {
+{
             if (advanceButton)
             {
                 advanceButton.onClick.AddListener(OnAdvanceClicked);
@@ -73,8 +93,30 @@ namespace ShiraOzi.UI
             if (dialogueText) dialogueText.text = text;
         }
 
-        public void HideDialogue()
+        public void SetDialogueLayout(DialogueLayoutSettings settings)
         {
+            if (dialogueRectTransform == null || settings == null) return;
+
+            dialogueRectTransform.anchorMin = settings.anchorMin;
+            dialogueRectTransform.anchorMax = settings.anchorMax;
+            dialogueRectTransform.pivot = settings.pivot;
+            dialogueRectTransform.anchoredPosition = settings.anchoredPosition;
+            dialogueRectTransform.sizeDelta = settings.sizeDelta;
+        }
+
+        public void ResetDialogueLayout()
+        {
+            if (dialogueRectTransform == null) return;
+
+            dialogueRectTransform.anchorMin = defaultAnchorMin;
+            dialogueRectTransform.anchorMax = defaultAnchorMax;
+            dialogueRectTransform.pivot = defaultPivot;
+            dialogueRectTransform.anchoredPosition = defaultAnchoredPosition;
+            dialogueRectTransform.sizeDelta = defaultSizeDelta;
+        }
+
+        public void HideDialogue()
+{
             if (dialoguePanel) dialoguePanel.SetActive(false);
         }
 
@@ -85,7 +127,7 @@ namespace ShiraOzi.UI
             var item = gameState.activeItem;
             bool hasItem = item != null;
 
-            // ƒAƒCƒeƒ€‚ª‚ ‚éê‡‚Ì‚İƒpƒlƒ‹‚ğ•\¦‚·‚éiƒAƒCƒeƒ€‚ª‚È‚¢ê‡‚Í”ñ•\¦‚É‚µ‚È‚¢j
+            // ï¿½Aï¿½Cï¿½eï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½Ì‚İƒpï¿½lï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½Aï¿½Cï¿½eï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½ê‡ï¿½Í”ï¿½\ï¿½ï¿½ï¿½É‚ï¿½ï¿½È‚ï¿½ï¿½j
             if (itemPanel && hasItem && !itemPanel.activeSelf)
             {
                 itemPanel.SetActive(true);

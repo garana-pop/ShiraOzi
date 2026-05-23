@@ -15,9 +15,10 @@ namespace ShiraOzi.Core
         private bool isDisplaying;
         private DialogueEntry currentEntry;
         private int currentLineIndex;
+        private DialogueLayoutSettings tempLayout;
 
         private void Awake()
-        {
+{
             if (Instance == null)
             {
                 Instance = this;
@@ -37,11 +38,21 @@ namespace ShiraOzi.Core
             currentLineIndex = 0;
             isDisplaying = true;
             
+            if (tempLayout != null && UIManager.Instance != null)
+            {
+                UIManager.Instance.SetDialogueLayout(tempLayout);
+            }
+
             DisplayCurrentLine();
         }
 
-        public void AdvanceDialogue()
+        public void SetTemporaryLayout(DialogueLayoutSettings layout)
         {
+            tempLayout = layout;
+        }
+
+        public void AdvanceDialogue()
+{
             if (!isDisplaying) return;
 
             currentLineIndex++;
@@ -74,7 +85,9 @@ namespace ShiraOzi.Core
             if (UIManager.Instance)
             {
                 UIManager.Instance.HideDialogue();
+                UIManager.Instance.ResetDialogueLayout();
             }
+            tempLayout = null;
         }
 
         private string GetLocalizedString(string tableReference, string key)

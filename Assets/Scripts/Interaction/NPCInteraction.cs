@@ -1,5 +1,6 @@
 using UnityEngine;
 using ShiraOzi.Core;
+using ShiraOzi.UI;
 
 namespace ShiraOzi.Interaction
 {
@@ -12,8 +13,14 @@ namespace ShiraOzi.Interaction
 
         public void Interact()
         {
+            // Check for custom layout settings on this object
+            if (TryGetComponent<DialogueLayoutSettings>(out var layoutSettings))
+            {
+                layoutSettings.Apply();
+            }
+
             DialogueEntry toPlay = defaultDialogue;
-            
+
             if (gameState != null && !string.IsNullOrEmpty(gameState.heldItemID))
             {
                 for (int i = 0; i < itemIDs.Length; i++)
