@@ -30,8 +30,26 @@ namespace ShiraOzi.Core
             }
         }
 
-        public void StartDialogue(DialogueEntry entry)
+        private void OnEnable()
         {
+            UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        }
+
+        private void OnDisable()
+        {
+            UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+        }
+
+        private void OnLocaleChanged(UnityEngine.Localization.Locale locale)
+        {
+            if (isDisplaying)
+            {
+                DisplayCurrentLine();
+            }
+        }
+
+        public void StartDialogue(DialogueEntry entry)
+{
             if (entry == null || isDisplaying) return;
             
             currentEntry = entry;
