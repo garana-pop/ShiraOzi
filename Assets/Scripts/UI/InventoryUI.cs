@@ -34,8 +34,16 @@ namespace ShiraOzi.UI
             inventoryPanel.SetActive(false);
         }
 
-        private void Populate()
+        private void Update()
         {
+            if (inventoryPanel.activeSelf && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                Close();
+            }
+        }
+
+        private void Populate()
+{
             // Clear existing items
             foreach (Transform child in itemContainer)
             {
