@@ -11,14 +11,20 @@ namespace ShiraOzi.Core
 
         [Header("Inventory")]
         public string heldItemID = "";
+        public List<ItemData> acquiredItems = new List<ItemData>();
+        public ItemData activeItem;
+
+        public event System.Action OnItemChanged;
 
         [Header("Diary")]
-        public List<string> unlockedDiaryEntries = new List<string>();
+public List<string> unlockedDiaryEntries = new List<string>();
 
         public void ResetState()
         {
             currentChapter = 1;
             heldItemID = "";
+            acquiredItems.Clear();
+            activeItem = null;
             unlockedDiaryEntries.Clear();
         }
 
@@ -34,5 +40,27 @@ namespace ShiraOzi.Core
                 unlockedDiaryEntries.Add(entryID);
             }
         }
-    }
-}
+
+        public void AddItem(ItemData item)
+        {
+            if (item == null) return;
+            
+            if (!acquiredItems.Contains(item))
+            {
+                acquiredItems.Add(item);
+            }
+
+            if (activeItem == null)
+            {
+                SetActiveItem(item);
+            }
+        }
+
+        public void SetActiveItem(ItemData item)
+        {
+            activeItem = item;
+            heldItemID = item != null ? item.itemID : "";
+            OnItemChanged?.Invoke();
+        }
+        }
+        }

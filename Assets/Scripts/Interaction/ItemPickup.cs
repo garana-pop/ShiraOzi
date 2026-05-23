@@ -6,14 +6,15 @@ namespace ShiraOzi.Interaction
     public class ItemPickup : MonoBehaviour
     {
         [SerializeField] private GameState gameState;
-        [SerializeField] private string itemID;
+        [SerializeField] private ItemData itemData;
 
         public void PickUp()
         {
-            if (gameState)
+            if (gameState && itemData != null)
             {
-                gameState.heldItemID = itemID;
-                Debug.Log($"Picked up: {itemID}");
+                gameState.AddItem(itemData);
+                Debug.Log($"Picked up: {itemData.itemName}");
+                gameObject.SetActive(false); // Disable after pickup
             }
         }
     }

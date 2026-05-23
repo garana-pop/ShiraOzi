@@ -17,7 +17,12 @@ namespace ShiraOzi.UI
 
         [Header("Inventory UI")]
         public GameObject itemPanel;
+        public Image activeItemImage;
         public TextMeshProUGUI itemText;
+        public InventoryUI inventoryUI;
+
+        [Header("Global Data")]
+        public GameState gameState;
 
         [Header("Settings UI")]
         public GameObject settingsPanel;
@@ -41,6 +46,24 @@ namespace ShiraOzi.UI
             {
                 advanceButton.onClick.AddListener(OnAdvanceClicked);
             }
+
+            if (itemPanel)
+            {
+                UnityEngine.UI.Button itemBtn = itemPanel.GetComponent<UnityEngine.UI.Button>();
+                if (itemBtn) itemBtn.onClick.AddListener(OnItemPanelClicked);
+            }
+
+            RefreshItemDisplay();
+        }
+
+        private void OnEnable()
+        {
+            if (gameState) gameState.OnItemChanged += RefreshItemDisplay;
+        }
+
+        private void OnDisable()
+        {
+            if (gameState) gameState.OnItemChanged -= RefreshItemDisplay;
         }
 
         public void ShowDialogue(string speaker, string text)
@@ -55,12 +78,25 @@ namespace ShiraOzi.UI
             if (dialoguePanel) dialoguePanel.SetActive(false);
         }
 
-        public void UpdateHeldItem(string itemName)
+        public void RefreshItemDisplay()
         {
-            if (itemPanel) itemPanel.SetActive(!string.IsNullOrEmpty(itemName));
-            if (itemText) itemText.text = itemName;
+            if (gameState == null) return;
+
+            bool hasItem = gameState.activeItem != null;
+            if (itemPanel) itemPanel.SetActive(hasItem);
+
+            if (hasItem)
+            {
+                if (activeItemImage) activeItemImage.sprite = gameState.activeItem.icon;
+                if (itemText) itemText.text = gameState.activeItem.itemName;
+            }
         }
-        
+
+        public void OnItemPanelClicked()
+        {
+            if (inventoryUI) inventoryUI.Toggle();
+        }
+
         public void ToggleSettings()
         {
             if (settingsPanel) settingsPanel.SetActive(!settingsPanel.activeSelf);
