@@ -9,12 +9,16 @@ namespace ShiraOzi.Core
     {
         public static SoundManager Instance { get; private set; } // シングルトンインスタンス
 
+        [SerializeField] private AudioSource bgmSource; // BGM再生用のオーディオソース
         [SerializeField] private AudioSource sfxSource; // 効果音再生用のオーディオソース
         [SerializeField] private AudioClip hoverClip;   // ホバー時の効果音
         [SerializeField] private AudioClip clickClip;   // クリック時の効果音
 
+        private float bgmVolume = 1f;
+        private float sfxVolume = 1f;
+
         private void Awake()
-        {
+{
             // シングルトンの初期化
             if (Instance == null)
             {
@@ -42,5 +46,25 @@ namespace ShiraOzi.Core
         {
             if (clickClip && sfxSource) sfxSource.PlayOneShot(clickClip);
         }
-    }
-}
+
+        /// <summary>
+        /// BGMの音量を設定する。
+        /// </summary>
+        /// <param name="volume">音量（0.0〜1.0）</param>
+        public void SetBGMVolume(float volume)
+        {
+            bgmVolume = Mathf.Clamp01(volume);
+            if (bgmSource) bgmSource.volume = bgmVolume;
+        }
+
+        /// <summary>
+        /// SEの音量を設定する。
+        /// </summary>
+        /// <param name="volume">音量（0.0〜1.0）</param>
+        public void SetSFXVolume(float volume)
+        {
+            sfxVolume = Mathf.Clamp01(volume);
+            if (sfxSource) sfxSource.volume = sfxVolume;
+        }
+        }
+        }

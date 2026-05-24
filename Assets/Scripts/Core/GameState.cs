@@ -11,9 +11,10 @@ namespace ShiraOzi.Core
     {
         [Header("Progress")]
         public int currentChapter = 1; // 現在のチャプター番号
+        public bool hasSeenOpening = false; // オープニングを視聴済みかどうか
 
         [Header("Inventory")]
-        public string heldItemID = ""; // 現在手に持っているアイテムのID
+public string heldItemID = ""; // 現在手に持っているアイテムのID
         public List<ItemData> acquiredItems = new List<ItemData>(); // 獲得済みのアイテムリスト
         public ItemData activeItem; // 現在アクティブ（選択中）なアイテム
 
@@ -29,6 +30,7 @@ namespace ShiraOzi.Core
         {
             // すべての変数を初期状態に戻す
             currentChapter = 1;
+            hasSeenOpening = false;
             heldItemID = "";
             acquiredItems.Clear();
             activeItem = null;
