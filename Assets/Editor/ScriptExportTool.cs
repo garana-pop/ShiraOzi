@@ -422,6 +422,34 @@ public class ScriptExportTool : EditorWindow
     }
 
     /// <summary>
+    /// スキャンされたファイルを強制的に git add する
+    /// .gitignore で除外されているファイル（Project_Overview.md など）を確実に含めるため
+    /// </summary>
+    private void ForceAddScannedFiles()
+    {
+        if (foundScriptPaths == null || foundScriptPaths.Count == 0) return;
+
+        string root = ProjectRootPath;
+        var relativePaths = new List<string>();
+        foreach (var path in foundScriptPaths)
+        {
+            string rel = path;
+            if (path.StartsWith(root))
+            {
+                rel = path.Substring(root.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            relativePaths.Add($"\"{rel.Replace("\\", "/")}\"");
+        }
+
+        // コマンドラインの長さを考慮して分割実行
+        for (int i = 0; i < relativePaths.Count; i += 50)
+        {
+            var batch = string.Join(" ", relativePaths.Skip(i).Take(50));
+            ExecuteGit($"add -f {batch}");
+        }
+    }
+
+    /// <summary>
     /// git push を実行
     /// </summary>
     private void RunGitPush()
