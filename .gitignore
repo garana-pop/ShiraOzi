@@ -50,9 +50,11 @@ mono_crash.*
 !/Assets/Editor/**/*.cs
 !/Assets/Scripts/**/*.cs
 !/Assets/Plans/**/*.md
+!/Assets/Project_Overview.md
 
 # 4. Unityで必須となる .meta ファイルも(上記フォルダ内のみ)許可する
 # ※これがないとUnity上でインポート設定が保持されません
 !/Assets/Editor/**/*.meta
 !/Assets/Scripts/**/*.meta
 !/Assets/Plans/**/*.meta
+!/Assets/Project_Overview.md.meta
