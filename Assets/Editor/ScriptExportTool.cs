@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -118,7 +118,7 @@ public class ScriptExportTool : EditorWindow
         };
 
         EditorGUILayout.LabelField("Script Export Tool", titleStyle);
-        EditorGUILayout.LabelField($"対象: {SCRIPT_FOLDER_PATH} 内のC#ファイル → txt出力 / Git連携", EditorStyles.centeredGreyMiniLabel);
+        EditorGUILayout.LabelField($"対象: {SCRIPT_FOLDER_PATH} 内のC#・MDファイル → txt出力 / Git連携", EditorStyles.centeredGreyMiniLabel);
         EditorGUILayout.LabelField($"プロジェクト: {ProjectRootPath}", EditorStyles.centeredGreyMiniLabel);
 
         EditorGUILayout.Space(10);
@@ -267,7 +267,7 @@ public class ScriptExportTool : EditorWindow
 
         if (latestGitFiles.Count > 0)
         {
-            EditorGUILayout.LabelField($"見つかったC#ファイル: {latestGitFiles.Count}個");
+            EditorGUILayout.LabelField($"見つかった対象ファイル: {latestGitFiles.Count}個");
 
             gitScrollPosition = EditorGUILayout.BeginScrollView(gitScrollPosition, GUILayout.Height(200));
             foreach (string file in latestGitFiles)
@@ -285,7 +285,7 @@ public class ScriptExportTool : EditorWindow
         }
         else if (!isGitScanning && lastGitCommitHash != "")
         {
-            EditorGUILayout.LabelField("最新のPushにC#ファイルは含まれていません", EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField("最新のPushに対象ファイルは含まれていません", EditorStyles.centeredGreyMiniLabel);
         }
 
         EditorGUILayout.Space(5);
@@ -338,7 +338,7 @@ public class ScriptExportTool : EditorWindow
 
         if (totalFoundFiles > 0)
         {
-            EditorGUILayout.LabelField($"合計: {totalFoundFiles}個のC#ファイルが見つかりました");
+            EditorGUILayout.LabelField($"合計: {totalFoundFiles}個のファイルが見つかりました");
 
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition, GUILayout.Height(200));
             int displayCount = Mathf.Min(foundScriptPaths.Count, MAX_FILE_DISPLAY_COUNT);
@@ -353,7 +353,7 @@ public class ScriptExportTool : EditorWindow
         }
         else
         {
-            EditorGUILayout.LabelField("C#ファイルが見つかりませんでした", EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField("対象ファイルが見つかりませんでした", EditorStyles.centeredGreyMiniLabel);
         }
 
         EditorGUILayout.Space(5);
@@ -566,12 +566,12 @@ public class ScriptExportTool : EditorWindow
                 string[] files = result.output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string file in files)
                 {
-                    if (file.EndsWith(".cs"))
+                    if (file.EndsWith(".cs") || file.EndsWith(".md"))
                         latestGitFiles.Add(file);
                 }
 
                 if (debugMode)
-                    Debug.Log($"最新Push: {latestGitFiles.Count}個のC#ファイルを検出");
+                    Debug.Log($"最新Push: {latestGitFiles.Count}個のファイルを検出");
             }
         }
         catch (Exception e)
@@ -654,9 +654,10 @@ public class ScriptExportTool : EditorWindow
         try
         {
             string scriptContent = File.ReadAllText(scriptPath);
+            string extension = Path.GetExtension(scriptPath);
             string fileName = Path.GetFileNameWithoutExtension(scriptPath);
 
-            if (addFileExtensionToName) fileName += ".cs";
+            if (addFileExtensionToName) fileName += extension;
 
             string outputPath = Path.Combine(targetDirectory, fileName + OUTPUT_EXTENSION);
             File.WriteAllText(outputPath, scriptContent);
@@ -699,9 +700,21 @@ public class ScriptExportTool : EditorWindow
             string[] scriptFiles = Directory.GetFiles(fullScriptPath, "*.cs", searchOption);
 
             foundScriptPaths.AddRange(scriptFiles);
-            totalFoundFiles = scriptFiles.Length;
 
-            if (debugMode) Debug.Log($"ScriptExportTool: {totalFoundFiles}個のC#ファイルを発見 (対象: {fullScriptPath})");
+            // Project_Overview.md を追加（Assets直下またはルート）
+            string[] overviewPaths = {
+                Path.Combine(fullScriptPath, "Project_Overview.md"),
+                Path.Combine(ProjectRootPath, "Project_Overview.md")
+            };
+            foreach (var path in overviewPaths)
+            {
+                if (File.Exists(path) && !foundScriptPaths.Contains(path))
+                    foundScriptPaths.Add(path);
+            }
+
+            totalFoundFiles = foundScriptPaths.Count;
+
+            if (debugMode) Debug.Log($"ScriptExportTool: {totalFoundFiles}個のファイルを発見 (対象: {fullScriptPath})");
         }
         catch (Exception e)
         {
@@ -762,18 +775,32 @@ public class ScriptExportTool : EditorWindow
         try
         {
             string scriptContent = File.ReadAllText(scriptPath);
+            string extension = Path.GetExtension(scriptPath);
             string fileName = Path.GetFileNameWithoutExtension(scriptPath);
 
-            if (addFileExtensionToName) fileName += ".cs";
+            if (addFileExtensionToName) fileName += extension;
 
             string outputFileName = fileName + OUTPUT_EXTENSION;
             string outputPath;
 
             if (createSubfolderStructure)
             {
-                string relativePath = Path.GetRelativePath(Application.dataPath, Path.GetDirectoryName(scriptPath));
-                string outputSubDir = Path.Combine(outputDirectory, relativePath);
-                if (!Directory.Exists(outputSubDir)) Directory.CreateDirectory(outputSubDir);
+                // Assetsフォルダ外にあるファイル（ルート直下など）の相対パスを解決
+                string relativeDir;
+                if (scriptPath.StartsWith(Application.dataPath))
+                {
+                    relativeDir = Path.GetRelativePath(Application.dataPath, Path.GetDirectoryName(scriptPath));
+                }
+                else
+                {
+                    // ルート直下の場合は、出力先ルートに置く
+                    relativeDir = "";
+                }
+                
+                string outputSubDir = Path.Combine(outputDirectory, relativeDir);
+                if (!string.IsNullOrEmpty(outputSubDir) && !Directory.Exists(outputSubDir)) 
+                    Directory.CreateDirectory(outputSubDir);
+                
                 outputPath = Path.Combine(outputSubDir, outputFileName);
             }
             else
