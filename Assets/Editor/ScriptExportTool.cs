@@ -41,7 +41,8 @@ public class ScriptExportTool : EditorWindow
     // Git設定
     [SerializeField] private string gitRemoteName = "origin";
     [SerializeField] private string gitBranchName = "main";
-    [SerializeField] private string gitCommitMessage = "Update scripts";
+    [SerializeField] private string gitCommitSubject = "Update scripts";
+    [SerializeField] private string gitCommitBody = "";
 
     private enum TabType { AllFiles, GitLatest, GitPush }
 
@@ -163,9 +164,12 @@ public class ScriptExportTool : EditorWindow
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.BeginHorizontal();
-        EditorGUILayout.LabelField("コミットメッセージ:", GUILayout.Width(120));
-        gitCommitMessage = EditorGUILayout.TextField(gitCommitMessage);
+        EditorGUILayout.LabelField("コミット件名:", GUILayout.Width(120));
+        gitCommitSubject = EditorGUILayout.TextField(gitCommitSubject);
         EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.LabelField("コミット本文:");
+        gitCommitBody = EditorGUILayout.TextArea(gitCommitBody, GUILayout.Height(100));
 
         EditorGUILayout.Space(10);
         DrawSeparator();
@@ -186,8 +190,11 @@ public class ScriptExportTool : EditorWindow
         GUI.enabled = !isGitPushing;
         if (GUILayout.Button("② git commit（コミット）", GUILayout.Height(30)))
         {
-            string safeMessage = gitCommitMessage.Replace("\"", "\\\"");
-            RunGitCommand($"commit -m \"{safeMessage}\"", "コミット完了");
+            string commitArgs = GetCommitArguments();
+            if (commitArgs != null)
+            {
+                RunGitCommand(commitArgs, "コミット完了");
+            }
         }
 
         EditorGUILayout.Space(3);
@@ -387,6 +394,30 @@ public class ScriptExportTool : EditorWindow
     #region Git Push Methods（新規追加）
 
     /// <summary>
+    /// コミット用の引数を生成する（件名と本文の処理を含む）
+    /// </summary>
+    private string GetCommitArguments()
+    {
+        if (string.IsNullOrEmpty(gitCommitSubject))
+        {
+            EditorUtility.DisplayDialog("エラー", "コミット件名を入力してください。", "OK");
+            return null;
+        }
+
+        string safeSubject = gitCommitSubject.Replace("\"", "\\\"");
+        if (string.IsNullOrEmpty(gitCommitBody))
+        {
+            return $"commit -m \"{safeSubject}\"";
+        }
+        else
+        {
+            string safeBody = gitCommitBody.Replace("\"", "\\\"");
+            // 複数の -m オプションを指定すると、それぞれの内容が段落（空行区切り）として結合される
+            return $"commit -m \"{safeSubject}\" -m \"{safeBody}\"";
+        }
+    }
+
+    /// <summary>
     /// Gitコマンドを汎用実行
     /// </summary>
     private void RunGitCommand(string arguments, string successLabel)
@@ -486,9 +517,11 @@ public class ScriptExportTool : EditorWindow
             }
 
             // git commit
-            string safeMessage = gitCommitMessage.Replace("\"", "\\\"");
-            var commitResult = ExecuteGit($"commit -m \"{safeMessage}\"");
-            AppendLog($"commit -m \"{gitCommitMessage}\"", commitResult);
+            string commitArgs = GetCommitArguments();
+            if (commitArgs == null) return;
+
+            var commitResult = ExecuteGit(commitArgs);
+            AppendLog(commitArgs, commitResult);
 
             // コミットなしでもpushは続行（nothing to commitの場合exitCode=1になる）
             bool nothingToCommit = commitResult.output.Contains("nothing to commit") ||
