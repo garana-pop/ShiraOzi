@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using ShiraOzi.Core;
+using System.Collections;
 
 namespace ShiraOzi.UI
 {
@@ -19,17 +20,37 @@ namespace ShiraOzi.UI
         [Header("UI Panels")]
         public GameObject settingsPanel;
 
+        private bool _isStarting; // 二重クリック防止用
+
         /// <summary>
         /// スタートボタン押下時の処理。
         /// 進行状況に応じてオープニングかメインシーンに遷移する。
         /// </summary>
         public void OnStartClicked()
         {
+            if (_isStarting) return;
+
             if (gameState == null)
             {
                 Debug.LogError("GameState is not assigned to TitleController.");
                 return;
             }
+
+            _isStarting = true;
+
+            // エディタでの MissingReferenceException 回避のため、シーン遷移前に選択を解除する
+#if UNITY_EDITOR
+            UnityEditor.Selection.activeGameObject = null;
+#endif
+
+            // 即座に遷移するとエディタの描画タイミングによってエラーが出ることがあるため、
+            // 1フレーム待機してからシーンをロードする
+            StartCoroutine(LoadNextSceneRoutine());
+        }
+
+        private IEnumerator LoadNextSceneRoutine()
+        {
+            yield return null;
 
             if (!gameState.hasSeenOpening)
             {
