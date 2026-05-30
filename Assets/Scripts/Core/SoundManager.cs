@@ -18,12 +18,16 @@ namespace ShiraOzi.Core
         private float sfxVolume = 1f;
 
         private void Awake()
-{
+        {
             // シングルトンの初期化
             if (Instance == null)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                
+                // 初期音量設定
+                if (sfxSource != null) sfxSource.volume = sfxVolume;
+                if (bgmSource != null) bgmSource.volume = bgmVolume;
             }
             else
             {
@@ -36,7 +40,15 @@ namespace ShiraOzi.Core
         /// </summary>
         public void PlayHoverSound()
         {
-            if (hoverClip && sfxSource) sfxSource.PlayOneShot(hoverClip);
+            if (hoverClip && sfxSource)
+            {
+                Debug.Log("[SoundManager] PlayHoverSound: " + hoverClip.name);
+                sfxSource.PlayOneShot(hoverClip);
+            }
+            else
+            {
+                Debug.LogWarning("[SoundManager] PlayHoverSound failed: hoverClip=" + hoverClip + ", sfxSource=" + sfxSource);
+            }
         }
 
         /// <summary>
@@ -44,7 +56,15 @@ namespace ShiraOzi.Core
         /// </summary>
         public void PlayClickSound()
         {
-            if (clickClip && sfxSource) sfxSource.PlayOneShot(clickClip);
+            if (clickClip && sfxSource)
+            {
+                Debug.Log("[SoundManager] PlayClickSound: " + clickClip.name);
+                sfxSource.PlayOneShot(clickClip);
+            }
+            else
+            {
+                Debug.LogWarning("[SoundManager] PlayClickSound failed: clickClip=" + clickClip + ", sfxSource=" + sfxSource);
+            }
         }
 
         /// <summary>
