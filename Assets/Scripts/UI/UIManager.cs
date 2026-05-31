@@ -40,33 +40,66 @@ namespace ShiraOzi.UI
 
         private void Awake()
         {
-            // シングルトンの初期化とデフォルトレイアウトの保存
+            // シングルトンの初期化
             if (Instance == null)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
-                
-                if (dialoguePanel)
-                {
-                    dialogueRectTransform = dialoguePanel.GetComponent<RectTransform>();
-                    if (dialogueRectTransform)
-                    {
-                        defaultAnchorMin = dialogueRectTransform.anchorMin;
-                        defaultAnchorMax = dialogueRectTransform.anchorMax;
-                        defaultPivot = dialogueRectTransform.pivot;
-                        defaultAnchoredPosition = dialogueRectTransform.anchoredPosition;
-                        defaultSizeDelta = dialogueRectTransform.sizeDelta;
-                    }
-                }
+                InitializeReferences();
             }
             else
             {
+                // すでにインスタンスがある場合は、新しい方の参照を古い方に引き継ぐ（任意）
+                // もしくは、新しい方のシーン内オブジェクトを古い方にセットする
+                Instance.RefreshSceneReferences(this);
                 Destroy(gameObject);
             }
         }
 
-        private void Start()
+        private void InitializeReferences()
         {
+            if (dialoguePanel)
+            {
+                dialogueRectTransform = dialoguePanel.GetComponent<RectTransform>();
+                if (dialogueRectTransform)
+                {
+                    defaultAnchorMin = dialogueRectTransform.anchorMin;
+                    defaultAnchorMax = dialogueRectTransform.anchorMax;
+                    defaultPivot = dialogueRectTransform.pivot;
+                    defaultAnchoredPosition = dialogueRectTransform.anchoredPosition;
+                    defaultSizeDelta = dialogueRectTransform.sizeDelta;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 新しいシーンのUIManagerから参照を引き継ぐ。
+        /// </summary>
+        /// <param name="newSceneManager">新しく生成された（そして破棄される予定の）UIManager</param>
+        public void RefreshSceneReferences(UIManager newSceneManager)
+        {
+            this.dialoguePanel = newSceneManager.dialoguePanel;
+            this.speakerText = newSceneManager.speakerText;
+            this.dialogueText = newSceneManager.dialogueText;
+            this.advanceButton = newSceneManager.advanceButton;
+            this.itemPanel = newSceneManager.itemPanel;
+            this.activeItemImage = newSceneManager.activeItemImage;
+            this.itemText = newSceneManager.itemText;
+            this.inventoryUI = newSceneManager.inventoryUI;
+            this.settingsPanel = newSceneManager.settingsPanel;
+
+            InitializeReferences();
+            
+            // ボタンのリスナーを再登録
+            if (advanceButton)
+            {
+                advanceButton.onClick.RemoveListener(OnAdvanceClicked);
+                advanceButton.onClick.AddListener(OnAdvanceClicked);
+            }
+        }
+
+        private void Start()
+{
             // ボタンイベントの登録
             if (advanceButton)
             {

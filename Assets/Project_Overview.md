@@ -1,71 +1,81 @@
 # ShiraOzi Project Overview
 
+This technical documentation provides a comprehensive overview of the **ShiraOzi** Unity project, a 2D narrative-driven puzzle/adventure game developed with Unity 6. The game focuses on interaction, item collection, and story progression through dialogue.
+
+---
+
 ## 1. Project Description
-**ShiraOzi** is a 2D narrative-driven puzzle adventure game built in Unity. It features a point-and-click interaction style where players explore environments, collect items, and engage in branching dialogues with NPCs to progress through chapters. The project places a heavy emphasis on localization and immersive UI, utilizing the Universal Render Pipeline (URP) and the official Localization package.
+**ShiraOzi** is a point-and-click adventure experience where players interact with environments to solve puzzles and uncover a narrative.
+- **Core Pillars**: Narrative storytelling, item-based interaction, and atmosphere-driven exploration.
+- **Target Experience**: A focused 2D experience with a heavy emphasis on localized dialogue and environmental puzzles (e.g., password inputs).
+- **Technology**: Built using Unity 6 (6000.4.4f1) with the Universal Render Pipeline (URP) 2D and the New Input System.
 
 ## 2. Gameplay Flow / User Loop
-1.  **Boot & Title**: The game starts in the `TitleScene` where players can adjust settings or start a new game.
-2.  **Exploration**: Players interact with objects in the environment (using `InteractableObject`) to trigger events or dialogues.
-3.  **Inventory & Item Use**: Players collect items (via `ItemPickup`) which are stored in the `GameState`. Carrying specific items changes the outcome of interactions with NPCs.
-4.  **Puzzle Solving**: Progression is often gated by logical puzzles (e.g., `PasswordPuzzle`) or by possessing the correct item for a specific interaction.
-5.  **Progression**: The `ChapterManager` and `GameState` track the story's progress, unlocking diary entries and transitioning through scenes.
+1. **Boot**: The game starts in the `TitleScene`, where players can start a new game or continue.
+2. **Transition**: If starting fresh, the `OpeningScene` plays (handling intro sequences).
+3. **Core Loop**:
+   - **Explore**: Navigate the `MainScene`, interacting with objects via `InteractableObject`.
+   - **Interact**: Click on NPCs or items. NPCs trigger localized dialogue via `DialogueManager`.
+   - **Collect**: Pick up items using `ItemPickup`, which stores them in the `GameState` and displays them in the UI.
+   - **Solve**: Use collected items or enter codes in `PasswordPuzzle` to progress.
+4. **Persistence**: The `SaveManager` automatically saves the game state on exit, allowing players to resume their progress (Chapter, Inventory, Diary).
 
 ## 3. Architecture
-The project follows a **Manager-Centric** architecture with a focus on **ScriptableObject-driven data**.
--   **Global State**: `GameState` (ScriptableObject) acts as the single source of truth for items, progress, and diary unlocks.
--   **Singleton Managers**: Core systems like `DialogueManager`, `UIManager`, `SoundManager`, and `CursorManager` use the Singleton pattern to provide global access while persisting across scene loads via `DontDestroyOnLoad`.
--   **Event-Driven UI**: The UI observes changes in the `GameState` (e.g., `OnItemChanged`) to update the display reactively.
--   **Decoupled Interaction**: The `InteractableObject` uses UnityEvents to trigger logic, allowing designers to hook up interactions (like picking up items or starting dialogues) in the inspector without writing new code.
+The project follows a Manager-based singleton architecture combined with ScriptableObject-based data containers.
+- **Data-Centric Design**: `GameState` (ScriptableObject) acts as the "Single Source of Truth" for the game's current state, decoupling logic from scene data.
+- **Singleton Managers**: Persistent systems like `SaveManager`, `DialogueManager`, and `UIManager` handle global functionality across scenes.
+- **Event-Driven UI**: The UI subscribes to `GameState` events (e.g., `OnItemChanged`) to update automatically without tight coupling.
 
 ## 4. Game Systems & Domain Concepts
 
-### Interaction System
-A point-and-click framework that handles hover states, cursor changes, and click events.
--   `InteractableObject`: The base component for all clickable/hoverable objects in the scene.
--   `CursorManager`: Manages visual feedback by changing the cursor texture during interaction.
--   `ItemPickup`: Specialized interaction to add items to the inventory.
--   `NPCInteraction`: Triggers dialogues, with logic to branch based on the player's held item.
-`Location: Assets/Scripts/Interaction/`
+### Game State & Persistence
+- `GameState`: A ScriptableObject containing current chapter, inventory list, active item, and unlocked diary entries.
+- `SaveManager`: Handles serialization of `GameState` to a `save.json` file in the persistent data path.
+- `SaveData`: A plain C# class used for JSON serialization.
+- `Location`: `Assets/Scripts/Core`
 
 ### Dialogue System
-A data-driven system for displaying localized text and managing conversation flow.
--   `DialogueEntry`: A ScriptableObject containing a sequence of conversation lines.
--   `DialogueManager`: Controls the flow of conversation and handles localization lookups.
--   `DialogueLayoutSettings`: Allows per-interaction customization of the dialogue UI's position and size.
-`Location: Assets/Scripts/Core/` and `Assets/Scripts/UI/`
+- `DialogueManager`: Controls the flow of conversation, supporting localized text retrieval and custom UI layouts.
+- `DialogueEntry`: A ScriptableObject holding an array of dialogue lines (speaker/text keys).
+- `DialogueLayoutSettings`: Allows dynamic repositioning of the dialogue box for specific narrative moments.
+- `Location`: `Assets/Scripts/Core` and `Assets/Scripts/UI`
 
-### Inventory & Item System
-Tracks acquired items and manages the "active" item used for world interactions.
--   `ItemData`: ScriptableObject defining an item's ID, name, and icon.
--   `GameState`: Stores the list of `acquiredItems` and the currently `activeItem`.
--   `InventoryUI`: Manages the display of the inventory grid.
-`Location: Assets/Scripts/Core/` and `Assets/Scripts/UI/`
+### Interaction System
+- `InteractableObject`: A generic component that uses Unity's `IPointer` interfaces to detect mouse clicks/hovers.
+- `ItemPickup`: Specific interaction logic for adding items to the inventory and disabling the world object.
+- `NPCInteraction`: Triggers dialogue sequences when interacting with world characters.
+- `CursorManager`: Changes the mouse cursor visual based on interaction availability.
+- `Location`: `Assets/Scripts/Interaction`
+
+### Inventory & Items
+- `ItemData`: ScriptableObject defining an item's ID, name, icon, and description.
+- `InventoryUI` / `InventoryItemUI`: Manages the display and selection of items within the player's bag.
+- `Location`: `Assets/Scripts/Core` and `Assets/Scripts/UI`
 
 ## 5. Scene Overview
--   **TitleScene**: The entry point, containing the main menu and global settings.
--   **OpeningScene**: Dedicated to the introductory narrative/cutscene.
--   **MainScene**: The primary gameplay environment where exploration and puzzles take place.
--   **_Recovery/0**: A fallback or recovery scene used during development.
+- `TitleScene`: The entry point. Manages game start, settings, and continuation logic.
+- `OpeningScene`: Dedicated to intro narrative/cutscenes.
+- `MainScene`: The primary gameplay environment where exploration and puzzles occur.
+- **Scene Flow**: Controlled by `ChapterManager` and UI-driven transitions (e.g., `TitleController`).
 
 ## 6. UI System
-The project uses **UGUI** (Unity UI) combined with **TextMesh Pro** for high-quality text rendering.
--   **Localization**: Integrated with the Unity Localization package. Text is retrieved via keys (e.g., `UIStrings`) to support multiple languages (EN, JA, ZH).
--   **UIManager**: The central hub for UI panels (Dialogue, Inventory, Settings). It handles the layouting of the dialogue box dynamically.
--   **Diary System**: Managed by `DiaryManager`, it tracks story milestones and allows players to review unlocked lore.
--   **LocalizedFontAsset**: A utility to ensure correct font assets are used based on the active language.
-`Location: Assets/Scripts/UI/`
+The project uses **UGUI** (Unity UI) for its interface.
+- **UIManager**: The central hub for UI panels (Dialogue, Inventory, Settings). It handles the instantiation and visibility of these elements.
+- **Localization**: Integration with the `Unity Localization` package. Text is pulled from `UIStrings` tables using keys defined in `DialogueEntry`.
+- **Dynamic Layouts**: The dialogue UI can be transformed at runtime using `DialogueLayoutSettings` to fit different scene compositions.
+- **Sound**: `UISoundTrigger` components provide audio feedback for hover and click events.
+- `Location`: `Assets/Scripts/UI`
 
 ## 7. Asset & Data Model
--   **ScriptableObjects**: Extensively used for data definitions.
-    -   `DialogueEntry`: Stores conversation trees.
-    -   `ItemData`: Stores item metadata.
-    -   `GameState`: Stores runtime save-ready data.
--   **Addressables**: Used for managing assets, specifically for localization tables and shared resources.
--   **Input Actions**: Uses the New Input System with a defined `InputActions` asset for cross-platform compatibility.
--   **Prefabs**: UI elements like `InventoryItem` are prefabs to ensure consistency across different screens.
+- **ScriptableObjects**: Heavily used for configuration and state:
+  - Dialogue: `Assets/Data/Dialogue/*.asset`
+  - Items: `Assets/Data/Items/*.asset`
+  - Global State: `Assets/Data/GameState/GameState.asset`
+- **Addressables**: The project is configured with Addressables, specifically for localization assets (Strings, Locales, Tables).
+- **Naming Convention**: Uses clear prefixes like `diag_` for dialogue keys and `item_` for item data.
 
 ## 8. Notes, Caveats & Gotchas
--   **Dialogue Layout Overrides**: The `DialogueManager` can have its UI layout temporarily overridden by `DialogueLayoutSettings` attached to specific interactables. If a new interactable needs a unique dialogue box position, add this component.
--   **Item IDs**: Interactions in `NPCInteraction` rely on string-based `itemIDs`. Ensure the ID in `ItemData` matches the ID entered in the NPC's interaction list.
--   **Singleton Persistence**: Since Managers use `DontDestroyOnLoad`, ensure that scene-specific references are cleared or updated when transitioning between scenes to avoid null references.
--   **Localization Refresh**: The `DialogueManager` listens for `SelectedLocaleChanged`. If adding new UI elements that display localized text, ensure they either use `LocalizeStringEvent` components or manually subscribe to locale changes.
+- **Auto-Save**: The game saves automatically on `OnApplicationQuit`. Ensure manual saves are triggered if the platform does not guarantee quit calls.
+- **Item Search**: The `SaveManager` contains a list of `allItems`. New items created as ScriptableObjects must be added to this list in the `SaveManager` prefab/instance to be restorable from a save file.
+- **Localization Keys**: Dialogue doesn't store raw strings; it stores *keys*. If a key is missing from the `UIStrings` table, the UI will display a "Key Not Found" error.
+- **Singleton Persistence**: Managers use `DontDestroyOnLoad`. Be careful not to duplicate them when returning to the Title scene.
