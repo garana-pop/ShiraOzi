@@ -14,6 +14,7 @@ namespace ShiraOzi.Core
         public static DialogueManager Instance { get; private set; } // シングルトンインスタンス
 
         [SerializeField] private GameState gameState; // ゲーム状態データへの参照
+        [SerializeField] private SpeakerMapping speakerMapping; // textKey サフィックスと話者名の対応表
         
         public bool IsDisplaying => isDisplaying;
         private bool isDisplaying; // 現在会話を表示中かどうかのフラグ
@@ -114,15 +115,51 @@ namespace ShiraOzi.Core
         private void DisplayCurrentLine()
         {
             var line = currentEntry.lines[currentLineIndex];
-            
-            // ローカライズされた文字列を取得
-            string speaker = GetLocalizedString("UIStrings", line.speakerKey);
+
+            // セリフ本文はローカライズキー（textKey）から取得
             string text = GetLocalizedString("UIStrings", line.textKey);
-            
+
+            string speaker;
+            bool showSpeaker = true;
+
+            // textKey のサフィックス（例: _Ozi, _Protagonist, _Narration）から話者を決定。
+            // マッピングに存在しない場合は従来の speakerKey にフォールバックする。
+            string suffix = ExtractSuffix(line.textKey);
+            if (speakerMapping != null && speakerMapping.TryGet(suffix, out var entry))
+            {
+                if (entry.hideSpeaker)
+                {
+                    // ナレーション等：話者ラベルを非表示にする
+                    speaker = string.Empty;
+                    showSpeaker = false;
+                }
+                else
+                {
+                    speaker = GetLocalizedString("UIStrings", entry.speakerNameKey);
+                }
+            }
+            else
+            {
+                // フォールバック：従来の speakerKey を使用
+                speaker = GetLocalizedString("UIStrings", line.speakerKey);
+            }
+
             if (UIManager.Instance)
             {
-                UIManager.Instance.ShowDialogue(speaker, text);
+                UIManager.Instance.ShowDialogue(speaker, text, showSpeaker);
             }
+        }
+
+        /// <summary>
+        /// ローカライズキーの最後の '_' 以降をサフィックスとして抽出する。
+        /// </summary>
+        /// <param name="key">対象のローカライズキー（textKey）</param>
+        /// <returns>サフィックス。'_' が無い／末尾が '_' の場合は null。</returns>
+        private static string ExtractSuffix(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            int idx = key.LastIndexOf('_');
+            return idx >= 0 && idx < key.Length - 1 ? key.Substring(idx + 1) : null;
         }
 
         /// <summary>

@@ -133,10 +133,15 @@ namespace ShiraOzi.UI
         /// </summary>
         /// <param name="speaker">話者の名前</param>
         /// <param name="text">表示するセリフ</param>
-        public void ShowDialogue(string speaker, string text)
+        /// <param name="showSpeaker">話者ラベルを表示するかどうか（false でナレーション扱い・非表示）</param>
+        public void ShowDialogue(string speaker, string text, bool showSpeaker = true)
         {
             if (dialoguePanel) dialoguePanel.SetActive(true);
-            if (speakerText) speakerText.text = speaker;
+            if (speakerText)
+            {
+                speakerText.gameObject.SetActive(showSpeaker);
+                speakerText.text = showSpeaker ? speaker : string.Empty;
+            }
             if (dialogueText) dialogueText.text = text;
         }
 
