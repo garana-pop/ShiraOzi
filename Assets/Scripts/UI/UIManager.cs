@@ -17,6 +17,7 @@ namespace ShiraOzi.UI
         public GameObject dialoguePanel; // 会話パネル
         public TextMeshProUGUI speakerText; // 話者名テキスト
         public TextMeshProUGUI dialogueText; // セリフテキスト
+        public TypewriterEffect typewriterEffect; // タイプライター演出
         public UnityEngine.UI.Button advanceButton; // 会話を進めるボタン
 
         [Header("Inventory UI")]
@@ -81,6 +82,7 @@ namespace ShiraOzi.UI
             this.dialoguePanel = newSceneManager.dialoguePanel;
             this.speakerText = newSceneManager.speakerText;
             this.dialogueText = newSceneManager.dialogueText;
+            this.typewriterEffect = newSceneManager.typewriterEffect;
             this.advanceButton = newSceneManager.advanceButton;
             this.itemPanel = newSceneManager.itemPanel;
             this.activeItemImage = newSceneManager.activeItemImage;
@@ -142,7 +144,15 @@ namespace ShiraOzi.UI
                 speakerText.gameObject.SetActive(showSpeaker);
                 speakerText.text = showSpeaker ? speaker : string.Empty;
             }
-            if (dialogueText) dialogueText.text = text;
+            
+            if (typewriterEffect)
+            {
+                typewriterEffect.Play(text);
+            }
+            else if (dialogueText)
+            {
+                dialogueText.text = text;
+            }
         }
 
         /// <summary>
@@ -229,10 +239,16 @@ namespace ShiraOzi.UI
         /// </summary>
         private void OnAdvanceClicked()
         {
+            if (typewriterEffect != null && typewriterEffect.IsBusy)
+            {
+                typewriterEffect.Skip();
+                return;
+            }
+
             if (DialogueManager.Instance)
             {
                 DialogueManager.Instance.AdvanceDialogue();
             }
         }
-    }
+}
 }
