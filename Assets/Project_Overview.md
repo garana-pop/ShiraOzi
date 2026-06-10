@@ -1,92 +1,87 @@
 # Project Overview: ShiraOzi
 
 ## 1. Project Description
-**ShiraOzi** is a 2D narrative-driven adventure/puzzle game built with Unity. It features a chapter-based progression system where players explore scenes, interact with NPCs, and solve environmental puzzles to advance the story. The project targets Windows (PC) and emphasizes a localized experience across multiple languages including Japanese, English, and Chinese. Key pillars include atmospheric storytelling through localized dialogue, item-based interaction, and a persistent save system that tracks player progress and diary unlocks.
+**ShiraOzi** is a 2D narrative-driven adventure/puzzle game developed in Unity 6. The experience focuses on exploration, dialogue-heavy storytelling, and point-and-click interaction. Players progress through chapters, interacting with objects and NPCs to uncover a story, while managing an inventory and unlocking diary entries. The core pillars of the project are immersive localized storytelling, atmospheric 2D visuals using URP, and a robust state-driven progression system.
 
 ## 2. Gameplay Flow / User Loop
-1.  **Boot & Title**: The user starts at the `TitleScene`. They can adjust settings or start the game.
-2.  **Scene Logic**: On "Start", the `TitleController` checks `GameState.hasSeenOpening`.
-    *   If false: Transition to `OpeningScene` for narrative introduction via `DialogueManager`.
-    *   If true: Transition directly to `MainScene`.
-3.  **Exploration Loop**:
-    *   **Interact**: Players click on objects using the `InteractableObject` component.
-    *   **Dialogue**: Interacting with NPCs or specific triggers starts dialogue sequences managed by `DialogueManager`.
-    *   **Collection**: Players find and collect items (`ItemPickup`), which are added to the `GameState` inventory.
-    *   **Puzzles**: Players use collected items or solve logic puzzles (e.g., `PasswordPuzzle`) to unlock new areas or chapters.
-4.  **Progression**: Using `ChapterManager`, the game advances through narrative milestones.
-5.  **Shutdown**: Progress is automatically saved to `save.json` via `SaveManager` upon quitting.
+1.  **Boot & Title**: The user starts in the `TitleScene`, where they can begin a new game or resume from a saved state.
+2.  **Introduction**: New games trigger the `OpeningScene`, which uses a specialized controller to play an introductory `DialogueEntry` before transitioning to the main game.
+3.  **Exploration Loop**: In `MainScene`, the player interacts with the environment using a point-and-click interface.
+    *   **Interact**: Hovering over objects changes the cursor and triggers audio feedback.
+    *   **Collect**: Players pick up items (stored in `GameState`) which appear in the UI.
+    *   **Solve**: Use acquired items or solve puzzles (like the `PasswordPuzzle`) to advance the narrative.
+4.  **Dialogue & Choice**: Interacting with NPCs or specific objects triggers the `DialogueManager`, showing localized text via a typewriter effect.
+5.  **Progression**: The `SaveManager` automatically persists the `GameState` (chapter, inventory, diary) to a JSON file on exit or specific triggers.
 
 ## 3. Architecture
-The project follows a **Manager-Singleton Pattern** for core systems to ensure global accessibility and persistence across scenes.
-*   **Central State**: The `GameState` ScriptableObject acts as the single source of truth for the player's current status, inventory, and unlocked content.
-*   **Scene Management**: Uses standard Unity `SceneManager` logic wrapped in controllers (`TitleController`, `OpeningSceneController`) to handle state-dependent transitions.
-*   **Persistence**: `SaveManager` serializes the `GameState` data into JSON. It uses a `SaveData` DTO to bridge the gap between runtime ScriptableObjects and disk storage.
-*   **Communication**: Systems often use C# Events (e.g., `GameState.OnItemChanged`) to notify the UI or other systems of state changes without tight coupling.
+The project follows a **Manager-based architecture** with **ScriptableObject-driven data**.
+
+*   **Global Singletons**: Critical systems like `DialogueManager`, `UIManager`, `SaveManager`, and `SoundManager` use the Singleton pattern and `DontDestroyOnLoad` to persist across scenes.
+*   **State Management**: `GameState` (a `ScriptableObject`) serves as the "Single Source of Truth" for the game's runtime data. Components observe this state via C# events (e.g., `OnItemChanged`).
+*   **Decoupled Interaction**: The `InteractableObject` component uses `UnityEvents` to decouple the physical interaction (clicking/hovering) from the specific logic (picking up an item vs. starting a conversation).
+*   **Localization**: The project integrates the **Unity Localization Package**, using string tables for all dialogue and UI elements.
+
+`Location: Assets/Scripts/Core`
 
 ## 4. Game Systems & Domain Concepts
 
-### Narrative & Dialogue System
-The system handles multi-line, localized conversations with configurable UI layouts.
-*   `DialogueManager`: Singleton that controls the flow, line by line, and triggers UI updates.
-*   `DialogueEntry`: ScriptableObject containing an array of dialogue lines (keys for localization).
-*   `DialogueLayoutSettings`: ScriptableObject used to dynamically reposition the dialogue box for specific narrative needs.
-*   `Localization`: Integrated with Unity's Localization package; `DialogueManager` listens for locale changes to refresh text.
-*   **Extension**: Create new `DialogueEntry` assets and call `DialogueManager.Instance.StartDialogue(entry)`.
-`Location: Assets/Scripts/Core`
+### Dialogue System
+A key narrative engine that sequences lines from `DialogueEntry` assets.
+*   `DialogueManager`: Coordinates the flow of conversation and UI display.
+*   `DialogueEntry`: A ScriptableObject containing an array of `DialogueLine` (keys for localization).
+*   `TypewriterEffect`: Handles the visual presentation of text over time.
+*   `SpeakerMapping`: Dynamically determines the speaker name and UI layout based on string key suffixes (e.g., `_Ozi`, `_Narration`).
+`Location: Assets/Scripts/Core`, `Assets/Scripts/UI`
 
 ### Interaction System
-A mouse-driven system for environmental interaction and cursor feedback.
-*   `InteractableObject`: Base component for all clickable/hoverable objects in the world.
-*   `CursorManager`: Changes the mouse sprite when hovering over interactable elements.
-*   `NPCInteraction`: A specialized interaction that triggers a specific `DialogueEntry`.
-*   `ItemPickup`: Interaction that adds an `ItemData` to the player's inventory.
-*   **Extension**: Attach `InteractableObject` to any GameObject with a Collider2D and hook into its `UnityEvents` (onHover, onClick).
+Handles user input and world feedback.
+*   `InteractableObject`: Provides a generic wrapper for mouse events (`OnPointerClick`, etc.).
+*   `CursorManager`: Changes the mouse cursor based on the current interaction state.
+*   `ItemPickup`: A specialized component for adding `ItemData` to the player's inventory.
 `Location: Assets/Scripts/Interaction`
 
 ### Inventory & Item System
-Manages the acquisition and usage of game items.
-*   `ItemData`: ScriptableObject defining an item's ID, name, and icon.
-*   `GameState`: Stores the list of `acquiredItems` and the currently `activeItem`.
-*   `InventoryUI` / `InventoryItemUI`: Handles the visual representation of the player's bag.
-*   **Extension**: Create new `ItemData` ScriptableObjects and assign them to `ItemPickup` components in the scene.
-`Location: Assets/Scripts/Core` & `Assets/Scripts/UI`
-
-### Progression & Save System
-Handles chapter transitions and data persistence.
-*   `ChapterManager`: Tracks and increments the current chapter index.
-*   `SaveManager`: Handles `Save()` on quit and `Load()` on awake.
-*   `SaveData`: A plain C# class for JSON serialization.
-*   **Extension**: Add new fields to `SaveData` and update `SaveManager.Save/Load` methods to persist new types of progress.
-`Location: Assets/Scripts/Core`
+Manages player possessions and their active use.
+*   `ItemData`: ScriptableObject defining an item's ID, Name, and Icon.
+*   `InventoryUI`: Manages the display of the grid and handles item selection.
+*   `InventoryItemUI`: Represents a single item slot in the UI.
+`Location: Assets/Scripts/UI`, `Assets/Scripts/Core`
 
 ## 5. Scene Overview
-*   **TitleScene**: The entry point. Handles game start logic and global settings access.
-*   **OpeningScene**: A narrative-heavy scene that plays the intro dialogue before handing off to the main gameplay.
-*   **MainScene**: The primary gameplay area where exploration and puzzles take place.
+*   **TitleScene**: The entry point. Handles game initialization and provides access to settings/start options.
+*   **OpeningScene**: A narrative scene dedicated to the intro cinematic/dialogue. Controlled by `OpeningSceneController`.
+*   **MainScene**: The primary gameplay environment where exploration and puzzles occur.
 *   **0.unity (_Recovery)**: A recovery/backup scene.
-*   **Scene Loading Rules**: The `TitleController` determines the flow based on `GameState`. Managers are `DontDestroyOnLoad`, ensuring they persist from the Title onwards.
+
+`Location: Assets/Scenes`
 
 ## 6. UI System
-The project uses **UGUI (Unity UI)** for its interface, managed primarily through the `UIManager`.
-*   **Dialogue UI**: A panel with text for speaker and content, and an "Advance" button.
-*   **Inventory UI**: A grid-based system that displays `InventoryItem` prefabs.
-*   **Binding Logic**: `UIManager` subscribes to `GameState.OnItemChanged` to update the "Active Item" display in the HUD automatically.
-*   **Localization**: Uses `LocalizedFontAsset` to swap fonts based on the selected language (e.g., using MSGothic for Japanese).
-*   **UI Sound**: `UISoundTrigger` components are attached to buttons to provide audio feedback via `SoundManager`.
+The project uses **UGUI** (Unity UI) for its interface, managed primarily through the `UIManager`.
+
+*   **Dialogue Panel**: Centrally managed; supports dynamic layout changes via `DialogueLayoutSettings`.
+*   **Inventory Overlay**: A toggleable panel that populates dynamically based on `GameState.acquiredItems`.
+*   **Typewriter Rendering**: Uses TextMeshPro for high-quality localized text rendering.
+*   **Binding**: The UI listens to `GameState` events to update icons and text automatically when items are picked up or selected.
+*   **UI Sounds**: `UISoundTrigger` components are used to attach audio feedback to UI interactions.
+
 `Location: Assets/Scripts/UI`
 
 ## 7. Asset & Data Model
-*   **ScriptableObjects**: Heavily utilized for data-driving the game.
+*   **ScriptableObjects**:
+    *   `GameState`: Runtime state (Chapter, Inventory, Diary).
+    *   `ItemData`: Static item definitions.
     *   `DialogueEntry`: Narrative content.
-    *   `ItemData`: Item definitions.
-    *   `GameState`: Global runtime state (one instance exists as an asset).
-    *   `DialogueLayoutSettings`: UI configuration.
-*   **Addressables**: The project is configured for Addressables, primarily used for managing localized assets and potentially for memory-efficient loading of scene content.
-*   **Save Data**: Stored in `Application.persistentDataPath/save.json`.
-*   **Organization**: Assets are grouped by type (`Data/`, `Prefabs/UI/`, `Scripts/Core/`).
+    *   `SpeakerMapping`: Configuration for UI labels.
+*   **Persistence**:
+    *   `SaveData`: A plain C# class used to serialize `GameState` into `save.json` via `JsonUtility`.
+*   **Localization**:
+    *   Addressables-based localized assets (String Tables, Asset Tables).
+    *   Supports multiple locales: `en`, `ja`, `zh-Hans`, `zh-Hant`.
+
+`Location: Assets/Data`, `Assets/Scripts/Core`
 
 ## 8. Notes, Caveats & Gotchas
-*   **UIManager Singleton Pattern**: The `UIManager` uses a pattern where the "Old" singleton (from a previous scene) takes over the references of the "New" singleton in a newly loaded scene via `RefreshSceneReferences`. This prevents losing the `DontDestroyOnLoad` instance while still allowing scene-specific UI assignment.
-*   **Scene Transition Delay**: `TitleController` uses a 1-frame delay (`yield return null`) before loading scenes to avoid `MissingReferenceException` in the Editor when clicking UI buttons.
-*   **Localization Sync**: Dialogue text is fetched from `StringTables` using keys. Ensure keys in `DialogueEntry` assets exactly match the keys in the `UIStrings` localization table.
-*   **Save Logic**: Note that `SaveManager` saves automatically on `OnApplicationQuit`. During development, use the `SaveResetTool` (Editor) if you need to clear the state.
+*   **Singleton Refreshing**: `UIManager` has a `RefreshSceneReferences` method. When a new scene loads, the persistent singleton updates its references to the new scene's UI objects to avoid null references.
+*   **Dialogue Suffixes**: The speaker name is often derived from the `textKey` suffix. Ensure all localization keys for dialogue follow the `KEY_Name` format if they are to be mapped to a specific speaker.
+*   **Save/Load Timing**: The `SaveManager` loads data on `Awake`. If you modify `GameState` in the editor, it may be overwritten by the existing `save.json` upon entering Play Mode. Use the `SaveResetTool` in the Editor to clear state.
+*   **Layer/Input Caveat**: Interactivity depends on `IPointer` handlers; ensure world objects have Colliders and a `Physics2DRaycaster` is present on the Camera.
