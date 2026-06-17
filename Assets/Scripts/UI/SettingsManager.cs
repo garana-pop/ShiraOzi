@@ -38,8 +38,21 @@ namespace ShiraOzi.UI
             new Vector2Int(640, 360),
         };
 
+        private bool _isInitialized;
+
         private void Start()
         {
+            Initialize();
+        }
+
+        /// <summary>
+        /// 設定の初期化を行う。
+        /// </summary>
+        public void Initialize()
+        {
+            if (_isInitialized) return;
+            _isInitialized = true;
+
             // 画面モード（フルスクリーン/ウィンドウ）ラジオの初期化
             bool isFullscreen = Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
                                 Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen;
@@ -96,11 +109,21 @@ namespace ShiraOzi.UI
         {
             if (bgmSlider != null)
             {
+                if (SoundManager.Instance != null && SoundManager.Instance.IsVolumeLoaded)
+                {
+                    bgmSlider.value = SoundManager.Instance.BGMVolume;
+                }
                 bgmSlider.onValueChanged.AddListener(SetBGMVolume);
+                SetBGMVolume(bgmSlider.value);
             }
             if (sfxSlider != null)
             {
+                if (SoundManager.Instance != null && SoundManager.Instance.IsVolumeLoaded)
+                {
+                    sfxSlider.value = SoundManager.Instance.SFXVolume;
+                }
                 sfxSlider.onValueChanged.AddListener(SetSFXVolume);
+                SetSFXVolume(sfxSlider.value);
             }
         }
 

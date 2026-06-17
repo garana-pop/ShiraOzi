@@ -74,6 +74,12 @@ data.currentChapter = gameState.currentChapter;
 
             data.unlockedDiaryEntries = new List<string>(gameState.unlockedDiaryEntries);
 
+            if (SoundManager.Instance != null)
+            {
+                data.bgmVolume = SoundManager.Instance.BGMVolume;
+                data.sfxVolume = SoundManager.Instance.SFXVolume;
+            }
+
             string json = JsonUtility.ToJson(data, true);
             File.WriteAllText(savePath, json);
             Debug.Log($"Game saved to: {savePath}");
@@ -96,6 +102,14 @@ data.currentChapter = gameState.currentChapter;
                 gameState.currentChapter = data.currentChapter;
                 gameState.hasSeenOpening = data.hasSeenOpening;
                 gameState.unlockedDiaryEntries = new List<string>(data.unlockedDiaryEntries);
+
+                // 音量の復元
+                if (SoundManager.Instance != null)
+                {
+                    SoundManager.Instance.SetBGMVolume(data.bgmVolume);
+                    SoundManager.Instance.SetSFXVolume(data.sfxVolume);
+                    SoundManager.Instance.IsVolumeLoaded = true;
+                }
 
                 // アイテムリストの復元
                 gameState.acquiredItems.Clear();

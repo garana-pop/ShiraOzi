@@ -14,11 +14,15 @@ namespace ShiraOzi.Core
         public string heldItemID;
         public List<string> acquiredItemIDs;
         public List<string> unlockedDiaryEntries;
+        public float bgmVolume;
+        public float sfxVolume;
 
         public SaveData()
         {
             acquiredItemIDs = new List<string>();
             unlockedDiaryEntries = new List<string>();
+            bgmVolume = 1f;
+            sfxVolume = 1f;
         }
     }
 }

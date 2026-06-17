@@ -22,6 +22,18 @@ namespace ShiraOzi.UI
 
         private bool _isStarting; // 二重クリック防止用
 
+        private void Start()
+        {
+            if (settingsPanel != null)
+            {
+                SettingsManager settingsManager = settingsPanel.GetComponent<SettingsManager>();
+                if (settingsManager != null)
+                {
+                    settingsManager.Initialize();
+                }
+            }
+        }
+
         /// <summary>
         /// スタートボタン押下時の処理。
         /// 進行状況に応じてオープニングかメインシーンに遷移する。

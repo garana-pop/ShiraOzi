@@ -17,6 +17,10 @@ namespace ShiraOzi.Core
         private float bgmVolume = 1f;
         private float sfxVolume = 1f;
 
+        public float BGMVolume => bgmVolume;
+        public float SFXVolume => sfxVolume;
+        public bool IsVolumeLoaded { get; set; } = false;
+
         private void Awake()
         {
             // シングルトンの初期化
