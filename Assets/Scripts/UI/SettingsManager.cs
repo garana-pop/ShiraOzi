@@ -13,8 +13,10 @@ namespace ShiraOzi.UI
     /// </summary>
     public class SettingsManager : MonoBehaviour
     {
-        public UnityEngine.UI.Toggle fullscreenToggle; // フルスクリーン切り替え用トグル
-        public TMP_Dropdown resolutionDropdown;        // 解像度選択用ドロップダウン
+        [Header("Screen")]
+        public UnityEngine.UI.Toggle fullscreenToggle; // 「フルスクリーン」ラジオトグル
+        public UnityEngine.UI.Toggle windowedToggle;   // 「ウィンドウ」ラジオトグル
+        public TMP_Dropdown windowSizeDropdown;        // ウィンドウサイズ選択ドロップダウン
         
         [Header("Audio")]
         public Slider bgmSlider; // BGM音量スライダー
@@ -27,19 +29,36 @@ namespace ShiraOzi.UI
         public GameState gameState; // ゲーム状態データへの参照
         public GameObject resetConfirmationPanel; // リセット確認パネル
 
-        private Resolution[] resolutions; // 利用可能な解像度のリスト
+        // ウィンドウサイズの固定候補（ドロップダウンの表示順と一致）
+        private static readonly Vector2Int[] WindowSizes =
+        {
+            new Vector2Int(1920, 1080),
+            new Vector2Int(1280, 720),
+            new Vector2Int(960, 540),
+            new Vector2Int(640, 360),
+        };
 
         private void Start()
         {
-            // フルスクリーン設定の初期化
+            // 画面モード（フルスクリーン/ウィンドウ）ラジオの初期化
+            bool isFullscreen = Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
+                                Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen;
+
             if (fullscreenToggle != null)
             {
-                fullscreenToggle.isOn = Screen.fullScreen;
+                fullscreenToggle.isOn = isFullscreen;
                 fullscreenToggle.onValueChanged.AddListener(SetFullscreen);
             }
+            if (windowedToggle != null)
+            {
+                windowedToggle.isOn = !isFullscreen;
+            }
 
-            // 解像度ドロップダウンの初期化
-            InitializeResolutionDropdown();
+            // ウィンドウサイズドロップダウンの初期化
+            InitializeWindowSizeDropdown();
+
+            // 現在の画面モードに合わせてドロップダウンの操作可否を設定
+            UpdateWindowSizeInteractable(isFullscreen);
 
             // 音量スライダーの初期化
             InitializeAudioSliders();
@@ -48,31 +67,29 @@ namespace ShiraOzi.UI
             InitializeLanguageDropdown();
         }
 
-        private void InitializeResolutionDropdown()
+        private void InitializeWindowSizeDropdown()
         {
-            resolutions = Screen.resolutions;
-            if (resolutionDropdown != null && resolutions.Length > 0)
+            if (windowSizeDropdown == null) return;
+
+            windowSizeDropdown.ClearOptions();
+
+            List<string> options = new List<string>();
+            int currentIndex = 0;
+            for (int i = 0; i < WindowSizes.Length; i++)
             {
-                resolutionDropdown.ClearOptions();
+                options.Add(WindowSizes[i].x + " x " + WindowSizes[i].y);
 
-                List<string> options = new List<string>();
-                int currentResolutionIndex = 0;
-                for (int i = 0; i < resolutions.Length; i++)
+                // 現在のウィンドウサイズと一致する候補を初期選択
+                if (WindowSizes[i].x == Screen.width && WindowSizes[i].y == Screen.height)
                 {
-                    string option = resolutions[i].width + " x " + resolutions[i].height;
-                    options.Add(option);
-
-                    if (resolutions[i].width == Screen.currentResolution.width &&
-                        resolutions[i].height == Screen.currentResolution.height)
-                    {
-                        currentResolutionIndex = i;
-                    }
+                    currentIndex = i;
                 }
-                resolutionDropdown.AddOptions(options);
-                resolutionDropdown.value = currentResolutionIndex;
-                resolutionDropdown.RefreshShownValue();
-                resolutionDropdown.onValueChanged.AddListener(SetResolution);
             }
+
+            windowSizeDropdown.AddOptions(options);
+            windowSizeDropdown.SetValueWithoutNotify(currentIndex);
+            windowSizeDropdown.RefreshShownValue();
+            windowSizeDropdown.onValueChanged.AddListener(SetWindowSize);
         }
 
         private void InitializeAudioSliders()
@@ -113,22 +130,54 @@ namespace ShiraOzi.UI
         }
 
         /// <summary>
-        /// フルスクリーン状態を切り替える。
+        /// フルスクリーン/ウィンドウを切り替える。「フルスクリーン」ラジオの値変更で呼ばれる。
         /// </summary>
         public void SetFullscreen(bool isFullscreen)
         {
-            Screen.fullScreen = isFullscreen;
+            if (isFullscreen)
+            {
+                Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+            }
+            else
+            {
+                // ウィンドウ化し、ドロップダウンで選択中のサイズを適用する。
+                ApplyWindowSize(windowSizeDropdown != null ? windowSizeDropdown.value : 0);
+            }
+
+            // フルスクリーン時はウィンドウサイズドロップダウンを操作不可（グレー表示）にする。
+            UpdateWindowSizeInteractable(isFullscreen);
         }
 
         /// <summary>
-        /// 指定されたインデックスの解像度を設定する。
+        /// ドロップダウンで選択されたウィンドウサイズを適用する。
+        /// フルスクリーン中は何もしない。
         /// </summary>
-        public void SetResolution(int resolutionIndex)
+        public void SetWindowSize(int index)
         {
-            if (resolutionIndex >= 0 && resolutionIndex < resolutions.Length)
+            if (Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
+                Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen)
             {
-                Resolution resolution = resolutions[resolutionIndex];
-                Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
+                return;
+            }
+            ApplyWindowSize(index);
+        }
+
+        private void ApplyWindowSize(int index)
+        {
+            if (index < 0 || index >= WindowSizes.Length) return;
+            Vector2Int size = WindowSizes[index];
+            Screen.SetResolution(size.x, size.y, FullScreenMode.Windowed);
+        }
+
+        /// <summary>
+        /// ウィンドウサイズドロップダウンの操作可否を更新する。
+        /// フルスクリーン時は interactable=false となり、Unity の Disabled カラーでグレー表示になる。
+        /// </summary>
+        private void UpdateWindowSizeInteractable(bool isFullscreen)
+        {
+            if (windowSizeDropdown != null)
+            {
+                windowSizeDropdown.interactable = !isFullscreen;
             }
         }
 
