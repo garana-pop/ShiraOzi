@@ -16,6 +16,9 @@ namespace ShiraOzi.Core
         public List<string> unlockedDiaryEntries;
         public float bgmVolume;
         public float sfxVolume;
+        public bool isFullscreen;
+        public int resolutionWidth;
+        public int resolutionHeight;
 
         public SaveData()
         {
@@ -23,6 +26,9 @@ namespace ShiraOzi.Core
             unlockedDiaryEntries = new List<string>();
             bgmVolume = 1f;
             sfxVolume = 1f;
+            isFullscreen = true;
+            resolutionWidth = 1920;
+            resolutionHeight = 1080;
         }
     }
 }

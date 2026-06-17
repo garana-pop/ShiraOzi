@@ -17,6 +17,10 @@ namespace ShiraOzi.Core
 
         private string savePath;
 
+        public bool IsFullscreen { get; private set; } = true;
+        public int ResolutionWidth { get; private set; } = 1920;
+        public int ResolutionHeight { get; private set; } = 1080;
+
         private void Awake()
         {
             InitializePath();
@@ -80,6 +84,11 @@ data.currentChapter = gameState.currentChapter;
                 data.sfxVolume = SoundManager.Instance.SFXVolume;
             }
 
+            // 画面設定の保存（現在の意図した設定値を書き出し）
+            data.isFullscreen = IsFullscreen;
+            data.resolutionWidth = ResolutionWidth;
+            data.resolutionHeight = ResolutionHeight;
+
             string json = JsonUtility.ToJson(data, true);
             File.WriteAllText(savePath, json);
             Debug.Log($"Game saved to: {savePath}");
@@ -111,6 +120,9 @@ data.currentChapter = gameState.currentChapter;
                     SoundManager.Instance.IsVolumeLoaded = true;
                 }
 
+                // 画面設定の読み込みと適用
+                SetScreenSettings(data.isFullscreen, data.resolutionWidth, data.resolutionHeight);
+
                 // アイテムリストの復元
                 gameState.acquiredItems.Clear();
                 foreach (string id in data.acquiredItemIDs)
@@ -141,19 +153,42 @@ data.currentChapter = gameState.currentChapter;
             else
             {
                 Debug.Log("No save file found. Starting with default state.");
+                // デフォルトはフルスクリーン
+                SetScreenSettings(true, 1920, 1080);
+
                 // セーブデータがない場合は初期値をセットして初プレイ状態にする
                 gameState.ResetState(); 
             }
             }
 
-        /// <summary>
-        /// IDからItemDataアセットを検索する。
-        /// </summary>
-        private ItemData FindItemByID(string id)
-        {
+            /// <summary>
+            /// IDからItemDataアセットを検索する。
+            /// </summary>
+            private ItemData FindItemByID(string id)
+            {
             if (allItems == null) return null;
             return allItems.Find(item => item != null && item.itemID == id);
-        }
+            }
+
+            /// <summary>
+            /// 画面設定をゲームに適用し、内部状態を更新する。
+            /// </summary>
+            public void SetScreenSettings(bool isFullscreen, int width, int height)
+            {
+                IsFullscreen = isFullscreen;
+                ResolutionWidth = width;
+                ResolutionHeight = height;
+
+                if (isFullscreen)
+                {
+                    Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+                }
+                else
+                {
+                    Screen.SetResolution(width, height, FullScreenMode.Windowed);
+                }
+                Debug.Log($"Applied screen settings: Fullscreen={IsFullscreen}, Resolution={ResolutionWidth}x{ResolutionHeight}");
+            }
 
         /// <summary>
         /// セーブデータを削除する（開発・デバッグ用）。

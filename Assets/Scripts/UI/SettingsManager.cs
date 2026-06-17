@@ -54,8 +54,16 @@ namespace ShiraOzi.UI
             _isInitialized = true;
 
             // 画面モード（フルスクリーン/ウィンドウ）ラジオの初期化
-            bool isFullscreen = Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
-                                Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen;
+            bool isFullscreen = true;
+            if (SaveManager.Instance != null)
+            {
+                isFullscreen = SaveManager.Instance.IsFullscreen;
+            }
+            else
+            {
+                isFullscreen = Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
+                               Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen;
+            }
 
             if (fullscreenToggle != null)
             {
@@ -88,12 +96,21 @@ namespace ShiraOzi.UI
 
             List<string> options = new List<string>();
             int currentIndex = 0;
+
+            int targetWidth = Screen.width;
+            int targetHeight = Screen.height;
+            if (SaveManager.Instance != null)
+            {
+                targetWidth = SaveManager.Instance.ResolutionWidth;
+                targetHeight = SaveManager.Instance.ResolutionHeight;
+            }
+
             for (int i = 0; i < WindowSizes.Length; i++)
             {
                 options.Add(WindowSizes[i].x + " x " + WindowSizes[i].y);
 
                 // 現在のウィンドウサイズと一致する候補を初期選択
-                if (WindowSizes[i].x == Screen.width && WindowSizes[i].y == Screen.height)
+                if (WindowSizes[i].x == targetWidth && WindowSizes[i].y == targetHeight)
                 {
                     currentIndex = i;
                 }
@@ -157,14 +174,32 @@ namespace ShiraOzi.UI
         /// </summary>
         public void SetFullscreen(bool isFullscreen)
         {
-            if (isFullscreen)
+            if (SaveManager.Instance != null)
             {
-                Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+                int width = SaveManager.Instance.ResolutionWidth;
+                int height = SaveManager.Instance.ResolutionHeight;
+                if (!isFullscreen && windowSizeDropdown != null)
+                {
+                    int index = windowSizeDropdown.value;
+                    if (index >= 0 && index < WindowSizes.Length)
+                    {
+                        width = WindowSizes[index].x;
+                        height = WindowSizes[index].y;
+                    }
+                }
+                SaveManager.Instance.SetScreenSettings(isFullscreen, width, height);
             }
             else
             {
-                // ウィンドウ化し、ドロップダウンで選択中のサイズを適用する。
-                ApplyWindowSize(windowSizeDropdown != null ? windowSizeDropdown.value : 0);
+                if (isFullscreen)
+                {
+                    Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+                }
+                else
+                {
+                    // ウィンドウ化し、ドロップダウンで選択中のサイズを適用する。
+                    ApplyWindowSize(windowSizeDropdown != null ? windowSizeDropdown.value : 0);
+                }
             }
 
             // フルスクリーン時はウィンドウサイズドロップダウンを操作不可（グレー表示）にする。
@@ -177,12 +212,33 @@ namespace ShiraOzi.UI
         /// </summary>
         public void SetWindowSize(int index)
         {
-            if (Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
-                Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen)
+            bool isCurrentlyFullscreen = false;
+            if (SaveManager.Instance != null)
+            {
+                isCurrentlyFullscreen = SaveManager.Instance.IsFullscreen;
+            }
+            else
+            {
+                isCurrentlyFullscreen = Screen.fullScreenMode == FullScreenMode.FullScreenWindow ||
+                                        Screen.fullScreenMode == FullScreenMode.ExclusiveFullScreen;
+            }
+
+            if (isCurrentlyFullscreen)
             {
                 return;
             }
-            ApplyWindowSize(index);
+
+            if (index < 0 || index >= WindowSizes.Length) return;
+            Vector2Int size = WindowSizes[index];
+
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.SetScreenSettings(false, size.x, size.y);
+            }
+            else
+            {
+                ApplyWindowSize(index);
+            }
         }
 
         private void ApplyWindowSize(int index)
