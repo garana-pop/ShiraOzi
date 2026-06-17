@@ -302,7 +302,18 @@ namespace ShiraOzi.UI
         public void ConfirmReset()
         {
             if (gameState) gameState.ResetState();
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.DeleteSaveData();
+            }
             if (resetConfirmationPanel) resetConfirmationPanel.SetActive(false);
+
+            // ゲームを終了する
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
         }
 
         /// <summary>

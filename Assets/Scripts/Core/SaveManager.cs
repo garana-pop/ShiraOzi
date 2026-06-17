@@ -16,6 +16,7 @@ namespace ShiraOzi.Core
         public List<ItemData> allItems = new List<ItemData>();
 
         private string savePath;
+        private bool preventSaveOnQuit = false;
 
         public bool IsFullscreen { get; private set; } = true;
         public int ResolutionWidth { get; private set; } = 1920;
@@ -51,6 +52,7 @@ namespace ShiraOzi.Core
 
         private void OnApplicationQuit()
         {
+            if (preventSaveOnQuit) return;
             // アプリケーション終了時に自動セーブ
             Save();
         }
@@ -195,6 +197,7 @@ data.currentChapter = gameState.currentChapter;
         /// </summary>
         public void DeleteSaveData()
         {
+            preventSaveOnQuit = true;
             if (File.Exists(savePath))
             {
                 File.Delete(savePath);
